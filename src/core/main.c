@@ -22,10 +22,14 @@ FILE_LICENCE ( GPL2_OR_LATER );
 #include <gpxe/image.h>
 #include <usr/autoboot.h>
 #include <config/general.h>
+#include <curses.h>
+#include <console.h>
+#include <unistd.h>
 
 #define NORMAL	"\033[0m"
 #define BOLD	"\033[1m"
 #define CYAN	"\033[36m"
+
 
 /**
  * Main entry point
@@ -33,14 +37,25 @@ FILE_LICENCE ( GPL2_OR_LATER );
  * @ret rc		Return status code
  */
 __asmcall int main ( void ) {
+#if 0
 	struct feature *feature;
 	struct image *image;
 
 	/* Some devices take an unreasonably long time to initialise */
 	printf ( PRODUCT_SHORT_NAME " initialising devices...\n" );
+#endif
 
 	initialise();
 	startup();
+
+	printf( CYAN BOLD);
+	printf( "CCBoot");
+	printf( NORMAL);
+	printf( " 2010/10/06 http://www.ccboot.com\n");
+
+	autoboot();
+
+#if 0
 
 	/*
 	 * Print welcome banner
@@ -84,8 +99,8 @@ __asmcall int main ( void ) {
 		if ( shell_banner() )
 			shell();
 	}
+#endif
 
 	shutdown ( SHUTDOWN_EXIT | shutdown_exit_flags );
-
 	return 0;
 }

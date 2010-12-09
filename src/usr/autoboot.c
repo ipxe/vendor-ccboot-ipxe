@@ -129,16 +129,20 @@ int boot_root_path ( const char *root_path ) {
  * @ret rc		Return status code
  */
 static int netboot ( struct net_device *netdev ) {
+
 	struct setting vendor_class_id_setting
 		= { .tag = DHCP_VENDOR_CLASS_ID };
 	struct setting pxe_discovery_control_setting
 		= { .tag = DHCP_PXE_DISCOVERY_CONTROL };
 	struct setting pxe_boot_menu_setting
 		= { .tag = DHCP_PXE_BOOT_MENU };
+
 	char buf[256];
+
 	struct in_addr next_server;
 	unsigned int pxe_discovery_control;
 	int rc;
+
 
 	/* Open device and display device status */
 	if ( ( rc = ifopen ( netdev ) ) != 0 )
@@ -152,44 +156,43 @@ static int netboot ( struct net_device *netdev ) {
 
 	/* Try PXE menu boot, if applicable */
 	fetch_string_setting ( NULL, &vendor_class_id_setting,
-			       buf, sizeof ( buf ) );
+		buf, sizeof ( buf ) );
 	pxe_discovery_control =
 		fetch_uintz_setting ( NULL, &pxe_discovery_control_setting );
 	if ( ( strcmp ( buf, "PXEClient" ) == 0 ) && pxe_menu_boot != NULL &&
-	     setting_exists ( NULL, &pxe_boot_menu_setting ) &&
-	     ( ! ( ( pxe_discovery_control & PXEBS_SKIP ) &&
-		   setting_exists ( NULL, &filename_setting ) ) ) ) {
-		printf ( "Booting from PXE menu\n" );
-		return pxe_menu_boot ( netdev );
+		setting_exists ( NULL, &pxe_boot_menu_setting ) &&
+		( ! ( ( pxe_discovery_control & PXEBS_SKIP ) &&
+		setting_exists ( NULL, &filename_setting ) ) ) ) {
+			printf ( "Booting from PXE menu\n" );
+			return pxe_menu_boot ( netdev );
 	}
 
 	/* Try to download and boot whatever we are given as a filename */
 	fetch_ipv4_setting ( NULL, &next_server_setting, &next_server );
 	fetch_string_setting ( NULL, &filename_setting, buf, sizeof ( buf ) );
-	if ( buf[0] ) {
-		printf ( "Booting from filename \"%s\"\n", buf );
+	if ( buf[0] && strcmp(buf, "gpxe.pxe") && strcmp(buf, "gpxex.pxe")) {
+		//	printf ( "Booting from filename \"%s\"\n", buf );
 		if ( ( rc = boot_next_server_and_filename ( next_server,
-							    buf ) ) != 0 ) {
-			printf ( "Could not boot from filename \"%s\": %s\n",
-				 buf, strerror ( rc ) );
-			return rc;
+			buf ) ) != 0 ) {
+				//printf ( "Could not boot from filename \"%s\": %s\n",
+				//	buf, strerror ( rc ) );
+				return rc;
 		}
 		return 0;
 	}
-	
+
 	/* No filename; try the root path */
 	fetch_string_setting ( NULL, &root_path_setting, buf, sizeof ( buf ) );
 	if ( buf[0] ) {
-		printf ( "Booting from root path \"%s\"\n", buf );
+		// printf ( "Booting from root path \"%s\"\n", buf );
 		if ( ( rc = boot_root_path ( buf ) ) != 0 ) {
 			printf ( "Could not boot from root path \"%s\": %s\n",
-				 buf, strerror ( rc ) );
+				buf, strerror ( rc ) );
 			return rc;
 		}
 		return 0;
 	}
 
-	printf ( "No filename or root path specified\n" );
 	return -ENOENT;
 }
 
@@ -228,6 +231,5 @@ void autoboot ( void ) {
 		close_all_netdevs();
 		netboot ( netdev );
 	}
-
 	printf ( "No more network devices\n" );
 }
